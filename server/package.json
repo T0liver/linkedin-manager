@@ -12,7 +12,8 @@
     "test": "vitest run",
     "dev": "tsx src/index.ts",
     "login": "tsx src/cli/login.ts",
-    "logout": "tsx src/cli/logout.ts"
+    "logout": "tsx src/cli/logout.ts",
+    "doctor": "tsx src/cli/doctor.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",
