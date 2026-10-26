@@ -9,6 +9,8 @@ export interface GateInput {
   action: string;
   text: string;
   confirm?: boolean;
+  /** Draft-only actions publish nothing, so the daily cap does not apply; confirmation and the duplicate check still do. */
+  draftOnly?: boolean;
 }
 
 export type GateResult =
@@ -62,7 +64,7 @@ export function checkWrite(input: GateInput, deps: GateDeps = {}): GateResult {
   const cap = readCap(dir, warnings);
 
   const today = log.entries.filter((e) => sameLocalDay(new Date(e.timestamp), now)).length;
-  if (today >= cap) {
+  if (!input.draftOnly && today >= cap) {
     return {
       allowed: false,
       reason: `Daily write cap reached (${today}/${cap}). Try again tomorrow or raise dailyCap in config.json.`,

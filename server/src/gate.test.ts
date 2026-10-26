@@ -42,6 +42,14 @@ describe("checkWrite", () => {
     expect(check("post 3", true, day2).allowed).toBe(true);
   });
 
+  it("exempts draft-only actions from the cap but not from confirm or duplicates", () => {
+    for (let i = 0; i < 3; i++) appendLog(dir, { action: "create_post", text: `post ${i}` }, day1);
+    const draft = (text: string, confirm?: boolean) => checkWrite({ action: "comment", text, confirm, draftOnly: true }, { dir, now: () => day1 });
+    expect(draft("post 3", true).allowed).toBe(true);
+    expect(draft("post 3").allowed).toBe(false);
+    expect(draft("POST 1", true).allowed).toBe(false);
+  });
+
   it("honours dailyCap from config.json", () => {
     writeFileSync(join(dir, "config.json"), JSON.stringify({ dailyCap: 1 }));
     appendLog(dir, { action: "create_post", text: "a" }, day1);

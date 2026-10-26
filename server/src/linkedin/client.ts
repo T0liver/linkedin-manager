@@ -28,7 +28,25 @@ export interface PostClient {
   createPost(req: PostRequest): Promise<PostResult>;
 }
 
-export type ApiErrorKind = "unauthorized" | "rate_limited" | "api_error" | "network";
+/** Verified against the Reactions API docs on 2026-10-26 (see docs/api-findings.md). MAYBE is deprecated. */
+export const REACTION_TYPES = {
+  LIKE: "Like",
+  PRAISE: "Celebrate",
+  EMPATHY: "Love",
+  INTEREST: "Insightful",
+  APPRECIATION: "Support",
+  ENTERTAINMENT: "Funny",
+} as const;
+
+export type ReactionType = keyof typeof REACTION_TYPES;
+
+/** What `comment` and `react` need from LinkedIn; tests substitute a mock. */
+export interface EngagementClient {
+  comment(postUrn: string, text: string): Promise<{ id?: string }>;
+  react(postUrn: string, type: ReactionType): Promise<void>;
+}
+
+export type ApiErrorKind = "unauthorized" | "forbidden" | "rate_limited" | "api_error" | "network";
 
 export class LinkedInApiError extends Error {
   constructor(
@@ -52,7 +70,7 @@ export function visibilityValue(v: Visibility): "PUBLIC" | "CONNECTIONS" {
   return v === "public" ? "PUBLIC" : "CONNECTIONS";
 }
 
-export class LinkedInClient implements PostClient {
+export class LinkedInClient implements PostClient, EngagementClient {
   constructor(
     private store: TokenStore,
     private fetchFn: Fetch = fetch,
@@ -78,6 +96,9 @@ export class LinkedInClient implements PostClient {
     }
     if (res.status === 401) {
       throw new LinkedInApiError("unauthorized", "LinkedIn rejected the token (HTTP 401).", `re-auth needed: ${LOGIN_COMMAND}`, 401);
+    }
+    if (res.status === 403) {
+      throw new LinkedInApiError("forbidden", "LinkedIn refused: this app lacks the permission (HTTP 403).", undefined, 403);
     }
     if (res.status === 429) {
       throw new LinkedInApiError("rate_limited", "LinkedIn rate limit hit (HTTP 429).", "stopped without retrying; wait before trying again", 429);
@@ -147,5 +168,28 @@ export class LinkedInClient implements PostClient {
     const urn = res.headers.get("x-restli-id");
     if (!urn) throw new LinkedInApiError("api_error", "LinkedIn created the post but returned no id.");
     return { urn, url: postUrl(urn) };
+  }
+
+  /** Needs w_member_social_feed (Community Management API); Share on LinkedIn apps get 403. */
+  async comment(postUrn: string, text: string): Promise<{ id?: string }> {
+    const token = this.token();
+    const actor = await this.authorUrn(token);
+    const res = await this.send(`${API_BASE}/socialActions/${encodeURIComponent(postUrn)}/comments`, {
+      method: "POST",
+      headers: this.headers(token),
+      body: JSON.stringify({ actor, object: postUrn, message: { text } }),
+    });
+    return { id: res.headers.get("x-restli-id") ?? undefined };
+  }
+
+  /** Needs w_member_social_feed (Community Management API); Share on LinkedIn apps get 403. */
+  async react(postUrn: string, type: ReactionType): Promise<void> {
+    const token = this.token();
+    const actor = await this.authorUrn(token);
+    await this.send(`${API_BASE}/reactions?actor=${encodeURIComponent(actor)}`, {
+      method: "POST",
+      headers: this.headers(token),
+      body: JSON.stringify({ root: postUrn, reactionType: type }),
+    });
   }
 }
