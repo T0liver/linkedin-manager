@@ -13,15 +13,22 @@ Helps the user manage their LinkedIn presence through a local MCP server (`serve
 
 ## Skills
 
-All planned; not yet implemented.
+Each skill is plain markdown in `skills/<name>/SKILL.md`. Read the file when its trigger applies.
 
-- `profile-audit` (planned): ranked list of profile fixes.
-- `profile-rewrite` (planned): proposed text for a profile section.
-- `portfolio-build` (planned): propose Featured items.
-- `profile-record` (planned): record what the user actually pasted.
-- `profile-diff` (planned): changes since the last recorded version.
-- `post-draft` (planned): draft post variants from an idea.
-- `engage` (planned): propose a reaction or comment on a post.
+- `profile-audit` ([skills/profile-audit/SKILL.md](skills/profile-audit/SKILL.md)): ranked list of profile fixes.
+- `profile-rewrite` ([skills/profile-rewrite/SKILL.md](skills/profile-rewrite/SKILL.md)): proposed text for a profile section.
+- `portfolio-build` ([skills/portfolio-build/SKILL.md](skills/portfolio-build/SKILL.md)): propose Featured items.
+- `profile-record` ([skills/profile-record/SKILL.md](skills/profile-record/SKILL.md)): record what the user actually pasted.
+- `profile-diff` ([skills/profile-diff/SKILL.md](skills/profile-diff/SKILL.md)): changes since the last recorded version.
+- `post-draft` ([skills/post-draft/SKILL.md](skills/post-draft/SKILL.md)): draft post variants from an idea, publish on confirmation.
+- `engage` ([skills/engage/SKILL.md](skills/engage/SKILL.md)): propose a reaction or comment on a post (draft-only by default).
+
+How each harness loads them:
+
+- Claude Code: copy or symlink `skills/*` into `.claude/skills/` (project) or `~/.claude/skills/` (user).
+- Codex, Cursor, OpenCode and others: read this file, then open the matching `SKILL.md` when the user's request fits.
+
+Examples of expected behavior are in `docs/examples/`. Starter files for the user's data are in `templates/` (copy to `~/.linkedin-agent/`).
 
 ## User data
 
